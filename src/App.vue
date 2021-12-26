@@ -1,14 +1,10 @@
 <template>
-  <Keypresses @rightOrLeft_OneMore="rightOrLeft_OneMore" />
+  <Keypresses 
+    @rightOrLeft_OneMore="rightOrLeft_OneMore"
+    @turnTetromino="turnTetromino"
+  />
   <Field :field="field" @click="dropOneMore"/>
 
-
-  <button v-on:click="show = !show">
-    Toggle
-  </button>
-  <transition name="fade">
-    <p v-if="show">hello</p>
-  </transition>
 </template>
 
 <script>
@@ -28,16 +24,171 @@ export default {
   data() {
     return {
       field: [],
-      show: true
+      tetrominoType: 0,
+      canTryToTurnOrMove: true
+
     }
   },
 
   methods:{
 
+    turnTetromino(){
+
+      if(!this.canTryToTurnOrMove) return;
+
+      let lastValues = [];
+
+      for (let i = 0; i < this.field.length; i++) {
+        for (let j = 0; j < this.field[i].length; j++) {
+          if(this.field[i][j].value == 'x' && this.field[i][j].isActive){
+            lastValues.push({
+              i: i,
+              j: j
+            });
+          }
+        }
+      }
+
+      let maxRight = 0;
+      let minLeft = lastValues[0].j;
+      let top = lastValues[0].i;
+      let bottom = 0;
+
+      for (let i = 0; i < lastValues.length; i++) {
+        if(lastValues[i].j > maxRight){
+          maxRight = lastValues[i].j;
+        }
+        if(lastValues[i].j < minLeft){
+          minLeft = lastValues[i].j;
+        }
+        if(lastValues[i].i < top){
+          top = lastValues[i].i;
+        }
+        if(lastValues[i].i > bottom){
+          bottom = lastValues[i].i;
+        }
+      }
+
+      let rowLength = maxRight - minLeft;
+      let colLength = bottom - top;
+
+      let rowToAdd = 0;
+      let colToAdd = 0;
+      if(colLength-rowLength < 0){
+        rowToAdd = colLength-rowLength;
+      }
+      else if(colLength-rowLength > 0){
+        colToAdd = colLength-rowLength;
+      }
+
+      for (let i = 0; i < this.field.length; i++) {
+        for (let j = 0; j < this.field[i].length; j++) {
+          if(this.field[i][j].value == 'x' && this.field[i][j].isActive){
+            this.field[i][j].value = '-';
+            this.field[i][j].isActive = false;
+          }
+        }
+      }
+
+
+
+      //forgatás
+      let index = 0;
+      let i_from_0 = 0;
+      let j_from_0 = 0;
+      let correction_j = top;
+      let correction_i = minLeft;
+
+      let pushToRight = 0;
+      let pushToTop = 0;
+
+      //kell e tolni
+      for (let i = top + rowToAdd; i <= bottom; i++) {
+        j_from_0 = 0;
+        for (let j = minLeft; j <= maxRight + colToAdd; j++) {
+          //console.log(this.field[i][j], i_from_0, j_from_0, i, j);
+          if(i == lastValues[index].i && j == lastValues[index].j){
+            if(0 > correction_i + (rowLength - i_from_0)){
+              pushToRight = -(correction_i + (rowLength - i_from_0));
+            }
+            if(correction_j + j_from_0 >= ROWS){
+              pushToTop--;
+            }
+            index < lastValues.length - 1 ? index++ : null;
+          }
+          j_from_0++;
+        }
+        i_from_0++;
+      }
+
+      if((this.tetrominoType === 0 || this.tetrominoType === 1 || this.tetrominoType === 2) && rowLength === 2){
+          pushToRight++;
+        }
+        else if(this.tetrominoType === 4 && rowLength === 3){
+          pushToRight += 3;
+        }
+        else if(this.tetrominoType >= 5 && rowLength === 1 && maxRight != COLS - 1){
+          console.log("maxright", maxRight)
+          pushToRight++;
+        }
+
+      //nincs e oldalt semmi
+      index = 0;
+      i_from_0 = 0;
+      let canTurn = true;
+      for (let i = top + rowToAdd; i <= bottom; i++) {
+        j_from_0 = 0;
+        for (let j = minLeft; j <= maxRight + colToAdd; j++) {
+          //console.log(this.field[i][j], i_from_0, j_from_0, i, j);
+          if(i == lastValues[index].i && j == lastValues[index].j){
+            if(pushToTop + correction_j + j_from_0 > ROWS || pushToRight + correction_i + (rowLength - i_from_0) > COLS){
+              canTurn = false;
+            }
+            else if(this.field[pushToTop + correction_j + j_from_0][pushToRight + correction_i + (rowLength - i_from_0)].value == 'x'){
+              canTurn = false;
+            }
+            index < lastValues.length - 1 ? index++ : null;
+          }
+          j_from_0++;
+        }
+        i_from_0++;
+      }
+
+      if(canTurn){
+  
+        index = 0;
+        i_from_0 = 0;
+        for (let i = top + rowToAdd; i <= bottom; i++) {
+          j_from_0 = 0;
+          for (let j = minLeft; j <= maxRight + colToAdd; j++) {
+            //console.log(this.field[i][j], i_from_0, j_from_0, i, j);
+            if(i == lastValues[index].i && j == lastValues[index].j){
+              this.field[pushToTop + correction_j + j_from_0][pushToRight + correction_i + (rowLength - i_from_0)].value = 'x';
+              this.field[pushToTop + correction_j + j_from_0][pushToRight + correction_i + (rowLength - i_from_0)].isActive = true;
+              index < lastValues.length - 1 ? index++ : null;
+            }
+            j_from_0++;
+          }
+          i_from_0++;
+          
+        }
+      }else{
+        for (let i = 0; i < lastValues.length; i++) {
+          this.field[lastValues[i].i][lastValues[i].j].value = 'x';
+          this.field[lastValues[i].i][lastValues[i].j].isActive = true;
+          
+        }
+      }
+
+      
+
+    },
+
     rightOrLeft_OneMore(direction){
+      
+      if(!this.canTryToTurnOrMove) return;
       let lastValues = [];
       let canDropMore = true;
-      console.log(direction)
 
       for (let i = 0; i < this.field.length; i++) {
         for (let j = 0; j < this.field[i].length; j++) {
@@ -82,7 +233,6 @@ export default {
           }
         }
       }
-      console.log(canDropMore);
 
       if(canDropMore){
 
@@ -120,6 +270,9 @@ export default {
     },
 
     checkLines(){
+      let rowCounter = 0;
+      let lastRowCleared = -1;
+
       for (let i = 0; i < this.field.length; i++) {
         for (let j = 0; j < this.field[i].length; j++) {
           if(this.field[i][j].value == '-') break;
@@ -127,10 +280,54 @@ export default {
             for (let k = 0; k < this.field[i].length; k++) {
               this.field[i][k].value = '-';
               
+              
             }
+            rowCounter++;
+            lastRowCleared = i;
           }
         }
       }
+
+      
+
+      setTimeout(()=>{
+        let lastValues = [];
+        if(rowCounter > 0){
+          for (let i = 0; i <= lastRowCleared; i++) {
+            for (let j = 0; j < this.field[i].length; j++) {
+              if(this.field[i][j].value == 'x'){
+                lastValues.push({
+                  i: i,
+                  j: j
+                });
+                this.field[i][j].value = '-';
+              }
+            }
+          }
+          let index = 0;
+          for (let i = 0; i <= lastRowCleared; i++) {
+            for (let j = 0; j < this.field[i].length; j++) {
+              if(lastValues[index].i == i && lastValues[index].j == j){
+                this.field[lastValues[index].i + rowCounter][j].value = 'x';
+                this.field[lastValues[index].i + rowCounter][j].canFade = true;
+                index == lastValues.length -1 ? null : index++;
+              }
+            }
+          }
+
+          for (let i = 0; i <= lastRowCleared; i++) {
+            for (let j = 0; j < this.field[i].length; j++) {
+              if(this.field[i][j].value == '-'){
+                this.field[i][j].canFade = false;
+              }
+            }
+          }
+
+        }
+      }, 1000)
+
+      if(rowCounter > 0) return true;
+      return false;
     },
 
     startGame(){
@@ -138,9 +335,18 @@ export default {
 
         if (!this.dropOneMore()) {
           clearInterval(printDelayed); // this stops the loop
-          this.checkLines();
-          this.generateTetromino();
-          this.startGame();
+          if(this.checkLines()){
+            this.canTryToTurnOrMove = false;
+            setTimeout(() => {
+              this.generateTetromino();
+              this.startGame();
+            }, 1000);
+          }else{
+            this.generateTetromino();
+            this.startGame();
+          }
+
+
         }
       }, 1000)
     },
@@ -217,7 +423,9 @@ export default {
     },
 
     generateTetromino(){
-      let num = Math.floor(Math.random() * 6);
+      let num = Math.floor(Math.random() * 7);
+      this.tetrominoType = num;
+      this.canTryToTurnOrMove = true;
 
       let tetrominos = [
         [
@@ -283,13 +491,6 @@ export default {
     }
   },
 
-  logKey(){
-    console.log('dwq')
-  },
-
-  mounted(){
-    window.addEventListener('keypress', this.logKey);
-  },
 
   created(){
     this.generateField();
