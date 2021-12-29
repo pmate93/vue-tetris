@@ -2,8 +2,9 @@
   <Keypresses 
     @rightOrLeft_OneMore="rightOrLeft_OneMore"
     @turnTetromino="turnTetromino"
+    @dropOneMore="dropOneMore"
   />
-  <Field :field="field" @click="dropOneMore"/>
+  <Field :field="field"/>
 
 </template>
 
@@ -25,18 +26,77 @@ export default {
     return {
       field: [],
       tetrominoType: 0,
-      canTryToTurnOrMove: true
+      canTryToTurnOrMove: true,
+      dropButtonPressed: false
 
     }
   },
 
   methods:{
 
+    startGame(){
+      
+      let printDelayed = setInterval(() => {
+
+        if(this.dropButtonPressed && this.findActiveCell()) {
+          this.dropButtonPressed = false;
+
+        }
+        else if (!this.dropOneMore(false)) {
+          clearInterval(printDelayed); // this stops the loop
+          if(this.findFullRows()){
+            
+            setTimeout(() => {
+              this.checkLines()
+              this.canTryToTurnOrMove = false;
+              setTimeout(() => {
+                if(this.generateTetromino()) this.startGame();
+                else clearInterval(printDelayed);
+              }, 400);
+              
+            }, 400);
+          }else{
+            if(this.generateTetromino()) this.startGame();
+            else clearInterval(printDelayed);
+          }
+
+
+        }
+      }, 1000)
+
+    },
+
+    findActiveCell(){
+      for (let i = 0; i < this.field.length; i++) {
+        for (let j = 0; j < this.field[i].length; j++) {
+          if(this.field[i][j].value == 'x' && this.field[i][j].isActive){
+            return true;
+          }
+        }
+      }
+      return false;
+    },
+
+    findFullRows(){
+      for (let i = 0; i < this.field.length; i++) {
+        for (let j = 0; j < this.field[i].length; j++) {
+          if(this.field[i][j].value == '-') break;
+          if(j == this.field[i].length -1 && this.field[i][j].value == 'x'){
+            return true;
+          }
+        }
+      }
+      return false;
+    },
+
+
+
     turnTetromino(){
 
       if(!this.canTryToTurnOrMove) return;
 
       let lastValues = [];
+      let color = '';
 
       for (let i = 0; i < this.field.length; i++) {
         for (let j = 0; j < this.field[i].length; j++) {
@@ -45,9 +105,11 @@ export default {
               i: i,
               j: j
             });
+            color = this.field[i][j].color;
           }
         }
       }
+      if(lastValues.length == 0) return;
 
       let maxRight = 0;
       let minLeft = lastValues[0].j;
@@ -106,7 +168,6 @@ export default {
       for (let i = top + rowToAdd; i <= bottom; i++) {
         j_from_0 = 0;
         for (let j = minLeft; j <= maxRight + colToAdd; j++) {
-          //console.log(this.field[i][j], i_from_0, j_from_0, i, j);
           if(i == lastValues[index].i && j == lastValues[index].j){
             if(0 > correction_i + (rowLength - i_from_0)){
               pushToRight = -(correction_i + (rowLength - i_from_0));
@@ -128,7 +189,6 @@ export default {
           pushToRight += 3;
         }
         else if(this.tetrominoType >= 5 && rowLength === 1 && maxRight != COLS - 1){
-          console.log("maxright", maxRight)
           pushToRight++;
         }
 
@@ -139,7 +199,6 @@ export default {
       for (let i = top + rowToAdd; i <= bottom; i++) {
         j_from_0 = 0;
         for (let j = minLeft; j <= maxRight + colToAdd; j++) {
-          //console.log(this.field[i][j], i_from_0, j_from_0, i, j);
           if(i == lastValues[index].i && j == lastValues[index].j){
             if(pushToTop + correction_j + j_from_0 > ROWS || pushToRight + correction_i + (rowLength - i_from_0) > COLS){
               canTurn = false;
@@ -161,10 +220,10 @@ export default {
         for (let i = top + rowToAdd; i <= bottom; i++) {
           j_from_0 = 0;
           for (let j = minLeft; j <= maxRight + colToAdd; j++) {
-            //console.log(this.field[i][j], i_from_0, j_from_0, i, j);
             if(i == lastValues[index].i && j == lastValues[index].j){
               this.field[pushToTop + correction_j + j_from_0][pushToRight + correction_i + (rowLength - i_from_0)].value = 'x';
               this.field[pushToTop + correction_j + j_from_0][pushToRight + correction_i + (rowLength - i_from_0)].isActive = true;
+              this.field[pushToTop + correction_j + j_from_0][pushToRight + correction_i + (rowLength - i_from_0)].color = color;
               index < lastValues.length - 1 ? index++ : null;
             }
             j_from_0++;
@@ -176,6 +235,7 @@ export default {
         for (let i = 0; i < lastValues.length; i++) {
           this.field[lastValues[i].i][lastValues[i].j].value = 'x';
           this.field[lastValues[i].i][lastValues[i].j].isActive = true;
+          this.field[lastValues[i].i][lastValues[i].j].color = color;
           
         }
       }
@@ -189,6 +249,7 @@ export default {
       if(!this.canTryToTurnOrMove) return;
       let lastValues = [];
       let canDropMore = true;
+      let color = '';
 
       for (let i = 0; i < this.field.length; i++) {
         for (let j = 0; j < this.field[i].length; j++) {
@@ -197,9 +258,12 @@ export default {
               i: i,
               j: j
             });
+            color = this.field[i][j].color;
           }
         }
       }
+
+      if(lastValues.length == 0) return;
 
       //maxkeres jobb oldalon
       let maxIdxRight = 0;
@@ -207,6 +271,8 @@ export default {
       let minLeft = lastValues[0].j;
       let minIdxLeft = 0;
 
+      //maxkeres jobb oldalon
+        
       for (let i = 0; i < lastValues.length; i++) {
         if(lastValues[i].j > maxRight){
           maxRight = lastValues[i].j;
@@ -217,6 +283,8 @@ export default {
           minIdxLeft = i;
         }
       }
+
+      
       
 
       if(lastValues[maxIdxRight].j + 1 > COLS - 1 && direction == "right" || lastValues[minIdxLeft].j == 0 && direction == "left"){
@@ -236,6 +304,8 @@ export default {
 
       if(canDropMore){
 
+        
+
         for (let i = 0; i < this.field.length; i++) {
           for (let j = 0; j < this.field[i].length; j++) {
             if(this.field[i][j].value == 'x' && this.field[i][j].isActive){
@@ -251,11 +321,13 @@ export default {
             if(lastValues[index].i == i && lastValues[index].j == j && direction == "right"){
               this.field[i][j + 1].value = 'x';
               this.field[i][j + 1].isActive = true;
+              this.field[i][j + 1].color = color;
               index < lastValues.length - 1 ? index++ : null;
             }
             else if(lastValues[index].i == i && lastValues[index].j == j && direction == "left"){
               this.field[i][j - 1].value = 'x';
               this.field[i][j - 1].isActive = true;
+              this.field[i][j - 1].color = color;
               index < lastValues.length - 1 ? index++ : null;
             }
           }
@@ -270,8 +342,7 @@ export default {
     },
 
     checkLines(){
-      let rowCounter = 0;
-      let lastRowCleared = -1;
+      let indexOfFullRows = [];
 
       for (let i = 0; i < this.field.length; i++) {
         for (let j = 0; j < this.field[i].length; j++) {
@@ -282,8 +353,7 @@ export default {
               
               
             }
-            rowCounter++;
-            lastRowCleared = i;
+            indexOfFullRows.push(i);
           }
         }
       }
@@ -291,84 +361,73 @@ export default {
       
 
       setTimeout(()=>{
-        let lastValues = [];
-        if(rowCounter > 0){
-          for (let i = 0; i <= lastRowCleared; i++) {
-            for (let j = 0; j < this.field[i].length; j++) {
-              if(this.field[i][j].value == 'x'){
-                lastValues.push({
-                  i: i,
-                  j: j
-                });
-                this.field[i][j].value = '-';
+        
+        if(indexOfFullRows.length > 0){
+
+          for(let h = 0; h < indexOfFullRows.length; h++){
+            let lastValues = [];
+            for (let i = 0; i <= indexOfFullRows[h]; i++) {
+              for (let j = 0; j < this.field[i].length; j++) {
+                if(this.field[i][j].value == 'x'){
+                  lastValues.push({
+                    i: i,
+                    j: j,
+                    color: this.field[i][j].color
+                  });
+                  this.field[i][j].value = '-';
+                }
               }
             }
-          }
-          let index = 0;
-          for (let i = 0; i <= lastRowCleared; i++) {
-            for (let j = 0; j < this.field[i].length; j++) {
-              if(lastValues[index].i == i && lastValues[index].j == j){
-                this.field[lastValues[index].i + rowCounter][j].value = 'x';
-                this.field[lastValues[index].i + rowCounter][j].canFade = true;
-                index == lastValues.length -1 ? null : index++;
+            let index = 0;
+            for (let i = 0; i <= indexOfFullRows[h]; i++) {
+              for (let j = 0; j < this.field[i].length; j++) {
+                if(lastValues[index].i == i && lastValues[index].j == j){
+                  this.field[lastValues[index].i + 1][j].value = 'x';
+                  this.field[lastValues[index].i + 1][j].canFade = true;
+                  this.field[lastValues[index].i + 1][j].color = lastValues[index].color;
+                  index == lastValues.length -1 ? null : index++;
+                }
+              }
+            }
+  
+            for (let i = 0; i <= indexOfFullRows[h]; i++) {
+              for (let j = 0; j < this.field[i].length; j++) {
+                if(this.field[i][j].value == '-'){
+                  this.field[i][j].canFade = false;
+                }
               }
             }
           }
 
-          for (let i = 0; i <= lastRowCleared; i++) {
-            for (let j = 0; j < this.field[i].length; j++) {
-              if(this.field[i][j].value == '-'){
-                this.field[i][j].canFade = false;
-              }
-            }
-          }
 
         }
-      }, 1000)
+      }, 400)
 
-      if(rowCounter > 0) return true;
+      if(indexOfFullRows.length > 0) return true;
       return false;
     },
 
-    startGame(){
-      let printDelayed = setInterval(() => {
-
-        if (!this.dropOneMore()) {
-          clearInterval(printDelayed); // this stops the loop
-          if(this.checkLines()){
-            this.canTryToTurnOrMove = false;
-            setTimeout(() => {
-              this.generateTetromino();
-              this.startGame();
-            }, 1000);
-          }else{
-            this.generateTetromino();
-            this.startGame();
-          }
-
-
-        }
-      }, 1000)
-    },
-
-    dropOneMore(){
+    dropOneMore(isPressed){
+      if(!this.canTryToTurnOrMove) return;
+      isPressed ? this.dropButtonPressed = true : this.dropButtonPressed = false;
       let lastValues = [];
       let canDropMore = true;
+      let color = '';
 
       for (let i = 0; i < this.field.length; i++) {
         for (let j = 0; j < this.field[i].length; j++) {
           if(this.field[i][j].value == 'x' && this.field[i][j].isActive){
             lastValues.push({
               i: i,
-              j: j
+              j: j,
             });
+            color = this.field[i][j].color;
           }
         }
       }
       //maxkeres
       let maxIdx = 0;
       let max = 0;
-      //console.log(maxIdx)
       for (let i = 0; i < lastValues.length; i++) {
         if(lastValues[i].i > max){
           max = lastValues[i].i;
@@ -377,7 +436,7 @@ export default {
       }
       
 
-      if(lastValues[maxIdx].i + 1 > ROWS - 1){
+      if(lastValues.length == 0 || lastValues[maxIdx].i + 1 > ROWS - 1){
         canDropMore = false;
       }else{
         for (let i = 0; i < lastValues.length; i++) {
@@ -405,12 +464,13 @@ export default {
             if(lastValues[index].i == i && lastValues[index].j == j){
               this.field[i + 1][j].value = 'x';
               this.field[i + 1][j].isActive = true;
+              this.field[i + 1][j].color = color;
               index < lastValues.length - 1 ? index++ : null;
             }
           }
         }
         return true;
-      }else{
+      }else if(!canDropMore && lastValues.length > 0){
 
         for (let i = 0; i < lastValues.length; i++) {
           this.field[lastValues[i].i][lastValues[i].j].isActive = false;
@@ -424,9 +484,11 @@ export default {
 
     generateTetromino(){
       let num = Math.floor(Math.random() * 7);
+      let colorIdx = Math.floor(Math.random() * 7);
       this.tetrominoType = num;
       this.canTryToTurnOrMove = true;
 
+      let colors = ['blue', 'green', 'lightblue', 'orange', 'purple', 'red', 'yellow'];
       let tetrominos = [
         [
           ['-', 'x', 'x', 'x'],
@@ -462,12 +524,16 @@ export default {
       for (let i = 0; i < tetrominos[num].length; i++) {
         for (let j = 0; j < tetrominos[num][i].length; j++) {
           if(tetrominos[num][i][j] == 'x'){
+            if(this.field[i][startIdx + j].value == 'x') return false;
             this.field[i][startIdx + j].value = 'x';
             this.field[i][startIdx + j].isActive = true;
             this.field[i][startIdx + j].canFade = false;
+            this.field[i][startIdx + j].color = colors[colorIdx];
           }
         }
       }
+
+      return true;
     },
     
 
@@ -487,7 +553,6 @@ export default {
           id++;
         }
       }
-      //console.log(this.field);
     }
   },
 

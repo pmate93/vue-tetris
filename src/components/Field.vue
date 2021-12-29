@@ -3,10 +3,10 @@
       <tr v-for='(row, index) in field' :key="index">
           <td v-for='(cell, idx) in row' :key="idx">
             <transition name="fade" v-if="cell.canFade">
-                <Tetromino v-if="cell.value == 'x'" :color="color" />
+                <Tetromino v-if="cell.value == 'x'" :color="cell.color" />
             </transition>
             <div v-else>
-                <Tetromino v-if="cell.value == 'x'" :color="color" />
+                <Tetromino v-if="cell.value == 'x'" :color="cell.color" />
             </div>
           </td>
       </tr>
