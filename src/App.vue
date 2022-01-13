@@ -5,12 +5,13 @@
     @dropOneMore="dropOneMore"
   />
   <Field :field="field"/>
-
+  <NextWindow :nextTetrominos="nextTetrominos" />
 </template>
 
 <script>
 import Field from './components/Field.vue';
 import Keypresses from './components/Keypresses.vue';
+import NextWindow from './components/NextWindow.vue';
 
 const ROWS = 20;
 const COLS = 10;
@@ -19,7 +20,8 @@ export default {
   name: 'App',
   components: {
     Field,
-    Keypresses
+    Keypresses,
+    NextWindow
   },
 
   data() {
@@ -27,7 +29,8 @@ export default {
       field: [],
       tetrominoType: 0,
       canTryToTurnOrMove: true,
-      dropButtonPressed: false
+      dropButtonPressed: false,
+      nextTetrominos: [],
 
     }
   },
@@ -50,13 +53,13 @@ export default {
               this.checkLines()
               this.canTryToTurnOrMove = false;
               setTimeout(() => {
-                if(this.generateTetromino()) this.startGame();
+                if(this.generateTetromino(false)) this.startGame();
                 else clearInterval(printDelayed);
               }, 400);
               
             }, 400);
           }else{
-            if(this.generateTetromino()) this.startGame();
+            if(this.generateTetromino(false)) this.startGame();
             else clearInterval(printDelayed);
           }
 
@@ -482,10 +485,10 @@ export default {
 
     },
 
-    generateTetromino(){
-      let num = Math.floor(Math.random() * 7);
-      let colorIdx = Math.floor(Math.random() * 7);
-      this.tetrominoType = num;
+    generateTetromino(gameStart){
+      //let num = Math.floor(Math.random() * 7);
+      //let colorIdx = Math.floor(Math.random() * 7);
+      //this.tetrominoType = num;
       this.canTryToTurnOrMove = true;
 
       let colors = ['blue', 'green', 'lightblue', 'orange', 'purple', 'red', 'yellow'];
@@ -519,8 +522,79 @@ export default {
           ['-', '-', 'x', 'x'],
         ],
       ];
-      
+
+      let tetrominosForNext = [
+        [
+          ['x', 'x', 'x'],
+          ['-', '-', 'x'],
+        ],
+        [
+          ['x', 'x', 'x'],
+          ['x', '-', '-'],
+        ],
+        [
+          ['-', 'x', '-'],
+          ['x', 'x', 'x'],
+        ],
+        [
+          ['x', 'x'],
+          ['x', 'x'],
+        ],
+        [
+          ['x', 'x', 'x', 'x'],
+        ],
+        [
+          ['-', 'x', 'x'],
+          ['x', 'x', '-'],
+        ],
+        [
+          ['x', 'x', '-'],
+          ['-', 'x', 'x'],
+        ],
+      ];
+
+      if(gameStart){
+        for (let i = 0; i < 4; i++) {
+          let num = Math.floor(Math.random() * 7);
+          let colorIdx = Math.floor(Math.random() * 7);
+          this.nextTetrominos.push({
+            blocks: tetrominos[num],
+            color: colors[colorIdx],
+            type: num,
+            blocksForNext: tetrominosForNext[num]
+          });
+          
+        }
+      }else{
+        let num = Math.floor(Math.random() * 7);
+        let colorIdx = Math.floor(Math.random() * 7);
+        this.nextTetrominos.push({
+            blocks: tetrominos[num],
+            color: colors[colorIdx],
+            type: num,
+            blocksForNext: tetrominosForNext[num]
+        });
+      }
+
       let startIdx = 2;
+      this.tetrominoType = this.nextTetrominos[0].type;
+      for (let i = 0; i < this.nextTetrominos[0].blocks.length; i++) {
+        for (let j = 0; j < this.nextTetrominos[0].blocks[i].length; j++) {
+          if(this.nextTetrominos[0].blocks[i][j] == 'x'){
+            if(this.field[i][startIdx + j].value == 'x'){
+              this.nextTetrominos.shift();
+              return false;
+            } 
+            this.field[i][startIdx + j].value = 'x';
+            this.field[i][startIdx + j].isActive = true;
+            this.field[i][startIdx + j].canFade = false;
+            this.field[i][startIdx + j].color = this.nextTetrominos[0].color;
+          }
+        }
+      }
+      this.nextTetrominos.shift();
+      
+      /* let startIdx = 2;
       for (let i = 0; i < tetrominos[num].length; i++) {
         for (let j = 0; j < tetrominos[num][i].length; j++) {
           if(tetrominos[num][i][j] == 'x'){
@@ -531,7 +605,7 @@ export default {
             this.field[i][startIdx + j].color = colors[colorIdx];
           }
         }
-      }
+      } */
 
       return true;
     },
@@ -559,7 +633,7 @@ export default {
 
   created(){
     this.generateField();
-    this.generateTetromino();
+    this.generateTetromino(true);
     this.startGame();
     
 
@@ -573,6 +647,13 @@ export default {
 </script>
 
 <style>
+
+body{
+  display:flex;
+  justify-content: center;
+  background-color: bisque;
+}
+
 #app {
   font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -581,8 +662,7 @@ export default {
   color: #2c3e50;
   margin-top: 60px;
   display:flex;
-  justify-content: center;
-  background-color:gray;
+  background-color:#C9ADA1;
 }
 
 .fade-enter-active, .fade-leave-active {
