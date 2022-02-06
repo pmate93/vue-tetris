@@ -5,7 +5,13 @@
     @dropOneMore="dropOneMore"
   />
   <Field :field="field"/>
-  <NextWindow :nextTetrominos="nextTetrominos" />
+  <NextWindow 
+    :nextTetrominos="nextTetrominos" 
+    :score="score" 
+    :pointsToAdd="pointsToAdd" 
+    :showPointsToAdd="showPointsToAdd"
+    :gameOver="gameOver"
+    @restart="restart" />
 </template>
 
 <script>
@@ -31,11 +37,27 @@ export default {
       canTryToTurnOrMove: true,
       dropButtonPressed: false,
       nextTetrominos: [],
+      score: 0,
+      pointsToAdd: 0,
+      showPointsToAdd: false,
+      gameOver: false
 
     }
   },
 
   methods:{
+
+    restart(){
+      this.field = [];
+      this.gameOver = false;
+      this.nextTetrominos = [];
+      this.score = 0;
+      this.pointsToAdd = 0;
+      this.generateField();
+      this.generateTetromino(true);
+      this.startGame();
+
+    },
 
     startGame(){
       
@@ -361,6 +383,18 @@ export default {
         }
       }
 
+      if(indexOfFullRows.length > 0){
+        this.showPointsToAdd = true;
+
+        if(indexOfFullRows.length > 1){
+          this.pointsToAdd = 100 * indexOfFullRows.length;
+          this.score += this.pointsToAdd;
+        }else{
+          this.pointsToAdd = 100;
+          this.score += this.pointsToAdd;
+        }
+      }
+
       
 
       setTimeout(()=>{
@@ -402,7 +436,7 @@ export default {
             }
           }
 
-
+          this.showPointsToAdd = false;
         }
       }, 400)
 
@@ -486,9 +520,6 @@ export default {
     },
 
     generateTetromino(gameStart){
-      //let num = Math.floor(Math.random() * 7);
-      //let colorIdx = Math.floor(Math.random() * 7);
-      //this.tetrominoType = num;
       this.canTryToTurnOrMove = true;
 
       let colors = ['blue', 'green', 'lightblue', 'orange', 'purple', 'red', 'yellow'];
@@ -578,13 +609,20 @@ export default {
 
       let startIdx = 2;
       this.tetrominoType = this.nextTetrominos[0].type;
+
+      for (let i = 0; i < this.nextTetrominos[0].blocks.length; i++) {
+        for (let j = 0; j < this.nextTetrominos[0].blocks[i].length; j++) {
+          if(this.nextTetrominos[0].blocks[i][j] == 'x' && this.field[i][startIdx + j].value == 'x'){
+            this.nextTetrominos.shift();
+            this.gameOver = true;
+            return false;
+          }
+        }
+      }
+
       for (let i = 0; i < this.nextTetrominos[0].blocks.length; i++) {
         for (let j = 0; j < this.nextTetrominos[0].blocks[i].length; j++) {
           if(this.nextTetrominos[0].blocks[i][j] == 'x'){
-            if(this.field[i][startIdx + j].value == 'x'){
-              this.nextTetrominos.shift();
-              return false;
-            } 
             this.field[i][startIdx + j].value = 'x';
             this.field[i][startIdx + j].isActive = true;
             this.field[i][startIdx + j].canFade = false;
@@ -593,20 +631,6 @@ export default {
         }
       }
       this.nextTetrominos.shift();
-      
-      /* let startIdx = 2;
-      for (let i = 0; i < tetrominos[num].length; i++) {
-        for (let j = 0; j < tetrominos[num][i].length; j++) {
-          if(tetrominos[num][i][j] == 'x'){
-            if(this.field[i][startIdx + j].value == 'x') return false;
-            this.field[i][startIdx + j].value = 'x';
-            this.field[i][startIdx + j].isActive = true;
-            this.field[i][startIdx + j].canFade = false;
-            this.field[i][startIdx + j].color = colors[colorIdx];
-          }
-        }
-      } */
-
       return true;
     },
     
@@ -635,9 +659,6 @@ export default {
     this.generateField();
     this.generateTetromino(true);
     this.startGame();
-    
-
-    
   },
 
   
@@ -663,6 +684,12 @@ body{
   margin-top: 60px;
   display:flex;
   background-color:#C9ADA1;
+  -webkit-user-select: none;  
+  -moz-user-select: none;  
+  -ms-user-select: none;  
+  -o-user-select: none;  
+  user-select: none;
+
 }
 
 .fade-enter-active, .fade-leave-active {
@@ -670,6 +697,25 @@ body{
 }
 .fade-enter, .fade-leave-to /* .fade-leave-active below version 2.1.8 */ {
   opacity: 0;
+}
+
+@media screen and (max-width: 545px) {
+    
+    body{
+    -webkit-transform: scale(0.67);
+       -moz-transform: scale(0.67);
+            transform: scale(0.67);
+    }    
+}
+
+@media screen and (max-width: 373px) {
+    
+    body{
+    -webkit-transform: scale(0.49);
+       -moz-transform: scale(0.49);
+            transform: scale(0.49);
+    height:100%;
+    }
 }
 </style>
 

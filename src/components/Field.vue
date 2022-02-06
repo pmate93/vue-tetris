@@ -61,23 +61,4 @@ td{
     height: 2rem;
 }
 
-@media screen and (max-width: 545px) {
-    
-    body{
-    -webkit-transform: scale(0.67);
-       -moz-transform: scale(0.67);
-            transform: scale(0.67);
-    }    
-}
-
-@media screen and (max-width: 373px) {
-    
-    body{
-    -webkit-transform: scale(0.49);
-       -moz-transform: scale(0.49);
-            transform: scale(0.49);
-    height:100%;
-    }
-}
-
 </style>

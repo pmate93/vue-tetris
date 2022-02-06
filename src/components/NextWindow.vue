@@ -10,21 +10,35 @@
                 </tr>
             </table>
         </div>
+        <Score 
+          :score="score" 
+          :pointsToAdd="pointsToAdd" 
+          :showPointsToAdd="showPointsToAdd" 
+          :gameOver="gameOver"
+          @restart="$emit('restart')" />
     </div>
 </template>
 
 <script>
 import Tetromino from './Tetromino.vue';
+import Score from './Score.vue';
 
 export default {
     name: 'NextWindow',
 
+    emits: ['restart'],
+
     components:{
-        Tetromino
+        Tetromino,
+        Score
     },
 
     props:{
         nextTetrominos: Array,
+        score: Number,
+        pointsToAdd: Number,
+        showPointsToAdd: Boolean,
+        gameOver: Boolean
     },
 }
 </script>

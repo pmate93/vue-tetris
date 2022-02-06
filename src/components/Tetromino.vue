@@ -1,5 +1,5 @@
 <template>
-    <img :src="require('../assets/tetrominos/' + color + '.png')" alt="">
+    <img :src="require('../assets/tetrominos/' + color + '.png')" alt="" draggable="false">
 </template>
 
 <script>
