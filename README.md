@@ -1,6 +1,6 @@
-Hosting: https://pmate93.github.io/vue-tetris/
-
 # vue-tetris
+
+Hosting: https://pmate93.github.io/vue-tetris/
 
 ## Project setup
 ```
